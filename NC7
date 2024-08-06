@@ -1,0 +1,146 @@
+local player = game.Players.LocalPlayer
+
+local function createUI()
+    local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+
+    -- زر لعرض الأزرار الأخرى
+    local showButton = Instance.new("TextButton", screenGui)
+    showButton.Size = UDim2.new(0, 50, 0, 50)
+    showButton.Position = UDim2.new(0, 10, 0, 10)
+    showButton.Text = "NC7"
+    showButton.TextScaled = true
+    showButton.BackgroundColor3 = Color3.new(0, 0, 0)
+    showButton.TextColor3 = Color3.new(1, 1, 1)
+    showButton.AutoButtonColor = false
+    showButton.BorderSizePixel = 0
+    showButton.BackgroundTransparency = 0.8
+    showButton.TextTransparency = 0.8
+
+    -- إطار التمرير لتخزين الأزرار الأخرى
+    local scrollingFrame = Instance.new("ScrollingFrame", screenGui)
+    scrollingFrame.Size = UDim2.new(0, 100, 0, 200)
+    scrollingFrame.Position = UDim2.new(0, 10, 0, 60)
+    scrollingFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+    scrollingFrame.Visible = false
+    scrollingFrame.Active = true
+    scrollingFrame.Draggable = true
+    scrollingFrame.BackgroundTransparency = 0.8
+    scrollingFrame.CanvasSize = UDim2.new(0, 0, 1.2, 0) -- حجم الحاوية الداخلية
+    scrollingFrame.ScrollBarThickness = 10
+
+    -- إضافة تخطيط القائمة
+    local listLayout = Instance.new("UIListLayout", scrollingFrame)
+    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    listLayout.Padding = UDim.new(0, 5)
+
+    -- دالة لإنشاء زر داخل إطار التمرير
+    local function createButton(text, clickFunction)
+        local button = Instance.new("TextButton", scrollingFrame)
+        button.Size = UDim2.new(1, 0, 0, 40)
+        button.Text = text
+        button.TextScaled = true
+        button.BackgroundColor3 = Color3.new(0, 0, 0)
+        button.TextColor3 = Color3.new(1, 1, 1)
+        button.BackgroundTransparency = 0.8
+        button.TextTransparency = 0.8
+        button.MouseButton1Click:Connect(clickFunction)
+        return button
+    end
+
+    -- دوال الأزرار
+    local function increaseSpeed()
+        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = humanoid.WalkSpeed + 10
+            print("تم زيادة سرعة اللاعب إلى: " .. humanoid.WalkSpeed)
+        end
+    end
+
+    local function decreaseSpeed()
+        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = math.max(0, humanoid.WalkSpeed - 10)
+            print("تم تقليل سرعة اللاعب إلى: " .. humanoid.WalkSpeed)
+        end
+    end
+
+    local function setMaxSpeed()
+        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = 100
+            print("تم تعيين سرعة اللاعب إلى: 100")
+        end
+    end
+
+    local function explodePlayer()
+        local character = player.Character
+        if character then
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
+                local explosion = Instance.new("Explosion")
+                explosion.Position = humanoidRootPart.Position
+                explosion.BlastRadius = 10
+                explosion.BlastPressure = 5000
+                explosion.Parent = game.Workspace
+
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.Health = 0
+                    print("تم تفجير اللاعب!")
+                end
+            end
+        end
+    end
+
+    local function highJump()
+        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.JumpPower = 100
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            print("تم تنفيذ قفزة مرتفعة!")
+        end
+    end
+
+    -- إنشاء الأزرار داخل إطار التمرير
+    createButton("زيادة السرعة", increaseSpeed)
+    createButton("تقليل السرعة", decreaseSpeed)
+    createButton("السرعة القصوى", setMaxSpeed)
+    createButton("تفجير", explodePlayer)
+    createButton("قفزة مرتفعة", highJump)
+
+    -- دالة لعرض/إخفاء إطار التمرير
+    local function toggleControls()
+        scrollingFrame.Visible = not scrollingFrame.Visible
+    end
+
+    -- ربط الحدث بالزر
+    showButton.MouseButton1Click:Connect(toggleControls)
+
+    -- السماح بسحب الأزرار
+    local function onInput(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local dragStart = input.Position
+            local startPos = scrollingFrame.Position
+
+            local function updatePosition()
+                local delta = input.Position - dragStart
+                scrollingFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+
+            local connection
+            connection = input.InputChanged:Connect(updatePosition)
+            input.InputEnded:Connect(function()
+                connection:Disconnect()
+            end)
+        end
+    end
+
+    showButton.InputBegan:Connect(onInput)
+    scrollingFrame.InputBegan:Connect(onInput)
+end
+
+player.CharacterAdded:Connect(createUI)
+
+if player.Character then
+    createUI()
+end
